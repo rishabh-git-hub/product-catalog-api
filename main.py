@@ -17,16 +17,16 @@ def show_all_products():
     return products
 
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field , field_validator
 
 
 class ProductCreate(BaseModel):
-    name: str
-    price: float
+    name: str = field_validator("name")
+    price: float = Field(gt=0)
     quantity: int = Field(default=0, ge=0)
 
 @app.post("/products")
-def add_product(product_details :ProductCreate  ):
+def add_product(product_details :ProductCreate):
     next_id = max([product["id"] for product in products], default=0) + 1
     name = product_details.name
     price = product_details.price

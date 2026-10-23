@@ -22,3 +22,4 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
+test.ipynb
