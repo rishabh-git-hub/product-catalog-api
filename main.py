@@ -17,11 +17,13 @@ def show_all_products():
     return products
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
 class ProductCreate(BaseModel):
     name: str
     price: float
-    quantity: int = 0
+    quantity: int = Field(default=0, ge=0)
 
 @app.post("/products")
 def add_product(product_details :ProductCreate  ):
