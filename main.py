@@ -17,18 +17,33 @@ def show_all_products():
     return products
 
 
+
 from pydantic import BaseModel, Field , field_validator
 
 
+def clean_name(name):
+    cleaned_name = name.strip()
+    if cleaned_name == "":
+        raise ValueError("Name cannot be empty")
+    return cleaned_name
+
+
 class ProductCreate(BaseModel):
-    name: str = field_validator("name")
+    name: str 
     price: float = Field(gt=0)
-    quantity: int = Field(default=0, ge=0)
+    quantity: int = Field(default=0, ge=0) 
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, name):
+        return clean_name(name)
+    
+
 
 @app.post("/products")
 def add_product(product_details :ProductCreate):
     next_id = max([product["id"] for product in products], default=0) + 1
-    name = product_details.name
+    name = clean_name(product_details.name)
     price = product_details.price
     quantity = product_details.quantity
     products.append({"id": next_id, "name": name, "price": price, "quantity": quantity})
