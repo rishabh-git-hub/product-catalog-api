@@ -74,4 +74,3 @@ def delete_product(product_id:int):
             products.remove(product)
             return product
     raise HTTPException (status_code= 404, detail="Product not found")
-
