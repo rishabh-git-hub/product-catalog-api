@@ -1,5 +1,6 @@
 # uv run uvicorn main:app --reload
 from fastapi import FastAPI , HTTPException
+from pydantic import BaseModel, Field , field_validator
 
 app = FastAPI()
 
@@ -16,8 +17,6 @@ def home():
 @app.get("/products")
 def show_all_products():
     return products
-
-from pydantic import BaseModel, Field , field_validator
 
 
 def clean_name(name):

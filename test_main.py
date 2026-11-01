@@ -1,10 +1,16 @@
+import json
 
 from fastapi.testclient import TestClient
+import pytest
+import  main
 
-from main import app
+client = TestClient(main.app)
 
-client = TestClient(app)
-
+@pytest.fixture(autouse=True)
+def reset_products():
+    main.products.clear()
+    yield
+    main.products.clear()
 
 def test_home_returns_successful_response():
     response = client.get("/")
@@ -40,7 +46,7 @@ def test_create_product_with_zero_price():
 
 
 def test_get_nonexistent_product():
-    response = client.get("/product/999")
+    response = client.get("/products/999")
     assert response.status_code == 404
 
 def test_create_product_with_blank_name():
@@ -77,7 +83,6 @@ def test_create_product_with_negative_quantity():
     assert response.status_code == 422
 
 
-
 def test_create_product_with_zero_quantity():
     product_data = {
         "name": "Keyboard",
@@ -89,3 +94,28 @@ def test_create_product_with_zero_quantity():
 
     assert response.status_code == 201
     assert response.json()["quantity"] == 0
+
+def test_get_product():
+    product_data = {
+        "name": "Keyboard",
+        "price": 49.99,
+        "quantity": 5
+    }
+    # create product
+    create_product = client.post("/products", json=product_data)
+    return_data = create_product.json()
+    assert create_product.status_code == 201
+
+    # get all product
+    response = client.get("/products")
+    products = response.json()
+    for product in products:
+        if product["id"] == return_data["id"]:
+            assert response.status_code ==200
+            assert product["name"] == "Keyboard"
+            assert  product["price"] == 49.99
+            assert product["quantity"] == 5
+            assert product["id"] == return_data["id"]
+            break
+    else:
+         pytest.fail("Created product was not found in GET /products response")
