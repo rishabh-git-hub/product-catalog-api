@@ -96,26 +96,42 @@ def test_create_product_with_zero_quantity():
     assert response.json()["quantity"] == 0
 
 def test_get_product():
-    product_data = {
+    product_data = [
+    {
+        "name": "mouse",
+        "price": 40,
+        "quantity": 2
+    },
+    {
         "name": "Keyboard",
         "price": 49.99,
         "quantity": 5
     }
-    # create product
-    create_product = client.post("/products", json=product_data)
-    return_data = create_product.json()
-    assert create_product.status_code == 201
+    ]
+    # create  all product
+    return_data = []
+    for product in product_data:
+        create_product = client.post("/products", json=product)
+        assert create_product.status_code == 201
+        return_data.append(create_product.json())
 
-    # get all product
+    return_data_id = None
+    for data in return_data:
+        if data["name"] == "Keyboard":
+            return_data_id = data["id"]
+
+    if return_data_id is None:
+        pytest.fail("Keyboard was not created")
+
+    # get all product and verify for product "keyboard"
     response = client.get("/products")
+    assert response.status_code == 200
     products = response.json()
     for product in products:
-        if product["id"] == return_data["id"]:
-            assert response.status_code ==200
-            assert product["name"] == "Keyboard"
-            assert  product["price"] == 49.99
-            assert product["quantity"] == 5
-            assert product["id"] == return_data["id"]
-            break
+        if product["id"] == return_data_id:
+                assert product["name"] == "Keyboard"
+                assert  product["price"] == 49.99
+                assert product["quantity"] == 5
+                break
     else:
          pytest.fail("Created product was not found in GET /products response")
