@@ -23,13 +23,15 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: Optional[str]
-    price: Optional[float] = Field(gt=0)
-    quantity: Optional[int] = Field(ge=0)
+    name: Optional[str] = None
+    price: Optional[float] = Field(default=None, gt=0)
+    quantity: Optional[int] = Field(default=None, ge=0)
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, name):
+        if name is None:
+            return None
         return clean_name(name)        
 
 def clean_name(name):
@@ -89,7 +91,7 @@ def delete_product(product_id:int):
 
 
 @app.patch("/products/{product_id}")
-def update_product(product_id:int, product_details:ProductUpdate):
+def update_product_partial(product_id:int, product_details:ProductUpdate):
     for product in products:
         if product["id"] == product_id:
             # 1. Get a dictionary of only the fields the client sent
