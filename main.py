@@ -9,22 +9,6 @@ products = [
     {"id": 2, "name": "Mouse", "price": 800.0, "quantity": 25},
 ]
 
-@app.get("/")
-def home():
-    return {"message": "Product Catalog API is running",
-            "version": "1.0.0"}
-
-@app.get("/products")
-def show_all_products():
-    return products
-
-
-def clean_name(name):
-    cleaned_name = name.strip()
-    if cleaned_name == "":
-        raise ValueError("Name cannot be empty")
-    return cleaned_name
-
 
 class ProductCreate(BaseModel):
     name: str 
@@ -35,6 +19,23 @@ class ProductCreate(BaseModel):
     @classmethod
     def validate_name(cls, name):
         return clean_name(name)
+
+def clean_name(name):
+    cleaned_name = name.strip()
+    if cleaned_name == "":
+        raise ValueError("Name cannot be empty")
+    return cleaned_name
+
+
+@app.get("/")
+def home():
+    return {"message": "Product Catalog API is running",
+            "version": "1.0.0"}
+
+@app.get("/products")
+def show_all_products():
+    return products
+
 
 @app.post("/products",status_code=201)
 def add_product(product_details :ProductCreate):
