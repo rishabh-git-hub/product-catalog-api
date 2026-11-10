@@ -1,7 +1,17 @@
 # uv run uvicorn main:app --reload
+
+import os
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from google.genai.errors import ServerError, APIError
 from fastapi import FastAPI , HTTPException
 from pydantic import BaseModel, Field , field_validator
 from typing import Optional
+
+
+load_dotenv()
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -111,9 +121,20 @@ def update_product_partial(product_id:int, product_details:ProductUpdate):
 
 @app.post("/products/enrich",status_code=201)
 def enrich_product(request_data: ProductEnrichmentRequest):
-    fake_data = ProductEnrichmentResponse(
-        name="ProType Wireless",
-        price=129.99,
-        description="A premium wireless keyboard"
-    )
-    return fake_data
+    prompt = f"Generate a creative product name, a short marketing description, and a realistic price in rupees for this item: {request_data.prompt}"
+    try:
+        response = client.models.generate_content(
+            model='gemini-3.8-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ProductEnrichmentResponse,
+            ),
+        )
+    except (ServerError, APIError):
+        # We catch the AI provider's error and return a clean response to our client
+        raise HTTPException(
+            status_code=503, 
+            detail="The AI provider is currently experiencing high demand. Please try again later."
+        )  
+    return response.parsed
