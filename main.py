@@ -23,16 +23,16 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: Optional[str] = None
-    price: Optional[float] = Field(default=None, gt=0)
-    quantity: Optional[int] = Field(default=None, ge=0)
+    name: str | None = None
+    price: float | None = Field(default=None, gt=0)
+    quantity: int | None = Field(default=None, ge=0)
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, name):
         if name is None:
-            return None
-        return clean_name(name)        
+            return name
+        return clean_name(name)      
 
 def clean_name(name):
     cleaned_name = name.strip()
