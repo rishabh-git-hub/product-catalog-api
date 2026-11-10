@@ -32,7 +32,15 @@ class ProductUpdate(BaseModel):
     def validate_name(cls, name):
         if name is None:
             return name
-        return clean_name(name)      
+        return clean_name(name) 
+
+class ProductEnrichmentRequest(BaseModel):
+    prompt : str
+
+class ProductEnrichmentResponse(BaseModel):
+    name : str
+    price : float
+    description: str         
 
 def clean_name(name):
     cleaned_name = name.strip()
@@ -100,3 +108,12 @@ def update_product_partial(product_id:int, product_details:ProductUpdate):
                 product[key] = value     
             return product
     raise HTTPException(status_code=404, detail="Product not found")        
+
+@app.post("/products/enrich",status_code=201)
+def enrich_product(request_data: ProductEnrichmentRequest):
+    fake_data = ProductEnrichmentResponse(
+        name="ProType Wireless",
+        price=129.99,
+        description="A premium wireless keyboard"
+    )
+    return fake_data
