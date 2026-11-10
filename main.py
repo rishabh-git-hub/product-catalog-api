@@ -1,6 +1,7 @@
 # uv run uvicorn main:app --reload
 from fastapi import FastAPI , HTTPException
 from pydantic import BaseModel, Field , field_validator
+from typing import Optional
 
 app = FastAPI()
 
@@ -19,6 +20,17 @@ class ProductCreate(BaseModel):
     @classmethod
     def validate_name(cls, name):
         return clean_name(name)
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str]
+    price: Optional[float] = Field(gt=0)
+    quantity: Optional[int] = Field(ge=0)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, name):
+        return clean_name(name)        
 
 def clean_name(name):
     cleaned_name = name.strip()
@@ -74,3 +86,15 @@ def delete_product(product_id:int):
             products.remove(product)
             return product
     raise HTTPException (status_code= 404, detail="Product not found")
+
+
+@app.patch("/products/{product_id}")
+def update_product(product_id:int, product_details:ProductUpdate):
+    for product in products:
+        if product["id"] == product_id:
+            # 1. Get a dictionary of only the fields the client sent
+            update_data = product_details.model_dump(exclude_unset=True)
+            for key, value in update_data.items():
+                product[key] = value     
+            return product
+    raise HTTPException(status_code=404, detail="Product not found")        
