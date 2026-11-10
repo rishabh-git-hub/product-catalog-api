@@ -540,6 +540,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "google-genai" },
     { name = "python-dotenv" },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -554,6 +555,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.161.1" },
     { name = "google-genai", specifier = ">=3.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
+    { name = "requests", specifier = ">=2.34.2" },
 ]
 
 [package.metadata.requires-dev]

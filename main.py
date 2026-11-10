@@ -2,16 +2,14 @@
 
 import os
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-from google.genai.errors import ServerError, APIError
 from fastapi import FastAPI , HTTPException
 from pydantic import BaseModel, Field , field_validator
 from typing import Optional
+import requests 
+import json
 
 
 load_dotenv()
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -119,22 +117,56 @@ def update_product_partial(product_id:int, product_details:ProductUpdate):
             return product
     raise HTTPException(status_code=404, detail="Product not found")        
 
-@app.post("/products/enrich",status_code=201)
-def enrich_product(request_data: ProductEnrichmentRequest):
-    prompt = f"Generate a creative product name, a short marketing description, and a realistic price in rupees for this item: {request_data.prompt}"
+
+@app.post("/products/enrich", status_code=201)
+def enrich_product(request_data: ProductEnrichmentRequest) -> ProductEnrichmentResponse:
+    prompt = f"Generate a creative product name, a short marketing description, and a realistic price in rupees for this item: {request_data.prompt}. Return ONLY valid JSON with keys 'name', 'price', and 'description'."
+    
+    url = "https://api.euron.one/api/v1/euri/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.environ.get('EURON_API_KEY')}"
+    }
+    payload = {
+        "model": "gpt-5.3-chat-latest",
+        "messages": [{"role": "user", "content": prompt}],
+        # Some providers support structured output natively, but if not, 
+        # we can explicitly ask for JSON in the prompt as done above.
+        "response_format": {"type": "json_object"} 
+    }
+
     try:
-        response = client.models.generate_content(
-            model='gemini-3.8-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ProductEnrichmentResponse,
-            ),
-        )
-    except (ServerError, APIError):
-        # We catch the AI provider's error and return a clean response to our client
+        # Make the HTTP POST request to Euron
+        response = requests.post(url, headers=headers, json=payload)
+        
+        # Raise an exception if the HTTP status code is an error (4xx, 5xx)
+        response.raise_for_status()
+        
+        # Parse the JSON response from Euron
+        response_data = response.json()
+        
+        # Extract the actual text content from the Euron response structure
+        # (This structure depends on the specific provider's API format)
+        content_string = response_data["choices"][0]["message"]["content"]
+        
+        # Parse that content string into a Python dictionary
+        content_dict = json.loads(content_string)
+        
+        # Validate the dictionary using our Pydantic model
+        validated_response = ProductEnrichmentResponse(**content_dict)
+        return validated_response
+
+    except requests.exceptions.RequestException as e:
+        # Catch any network or HTTP errors from the Euron API call
+        print(f"Provider Error: {e}") # Print the raw error to your Uvicorn terminal for debugging
         raise HTTPException(
             status_code=503, 
-            detail="The AI provider is currently experiencing high demand. Please try again later."
-        )  
-    return response.parsed
+            detail="The AI provider is currently experiencing issues. Please try again later."
+        )
+    except (json.JSONDecodeError, KeyError, ValueError) as e:
+        # Catch parsing errors if the AI returns bad JSON or misses a key
+        print(f"Parsing Error: {e}") 
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process the response from the AI provider."
+        )
