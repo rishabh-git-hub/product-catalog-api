@@ -137,7 +137,7 @@ def enrich_product(request_data: ProductEnrichmentRequest) -> ProductEnrichmentR
 
     try:
         # Make the HTTP POST request to Euron
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload , timeout=5)
         
         # Raise an exception if the HTTP status code is an error (4xx, 5xx)
         response.raise_for_status()
@@ -170,3 +170,6 @@ def enrich_product(request_data: ProductEnrichmentRequest) -> ProductEnrichmentR
             status_code=500,
             detail="Failed to process the response from the AI provider."
         )
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Provider timeout Error") 
