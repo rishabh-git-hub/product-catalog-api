@@ -156,6 +156,9 @@ def enrich_product(request_data: ProductEnrichmentRequest) -> ProductEnrichmentR
         validated_response = ProductEnrichmentResponse(**content_dict)
         return validated_response
 
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="Provider timeout Error")     
+
     except requests.exceptions.RequestException as e:
         # Catch any network or HTTP errors from the Euron API call
         print(f"Provider Error: {e}") # Print the raw error to your Uvicorn terminal for debugging
@@ -170,6 +173,3 @@ def enrich_product(request_data: ProductEnrichmentRequest) -> ProductEnrichmentR
             status_code=500,
             detail="Failed to process the response from the AI provider."
         )
-
-    except requests.exceptions.Timeout:
-        raise HTTPException(status_code=504, detail="Provider timeout Error") 
