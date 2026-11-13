@@ -3,6 +3,8 @@ import json
 from fastapi.testclient import TestClient
 import pytest
 import  main
+from unittest.mock import patch, Mock
+
 
 client = TestClient(main.app)
 
@@ -135,3 +137,33 @@ def test_get_product():
                 break
     else:
          pytest.fail("Created product was not found in GET /products response")
+
+
+def test_enrich_product_validation_error():
+    prompt = {}
+
+    response = client.post("/products/enrich", json=prompt)
+    assert response.status_code == 422
+ 
+
+# 2. We put the @patch "sticker" on top of our test function.
+# We tell it the exact path to the tool we want to fake: "main.requests.post".
+# (This assumes your FastAPI code is inside a file named main.py)
+@patch("main.requests.post")
+def test_enrich_product_timeout(mock_post):
+    mock_post.side_effect = requests.exceptions.Timeout("Connection timed out")
+    payload = {"prompt": "keyboard"}
+    response = client.post("/products/enrich",json=payload)
+    # 3. Inside the function, we can now configure our stunt double
+    assert response.status_code == 504
+
+
+@patch("main.requests.post")
+def test_enrich_product_provider_error(mock_post):
+    mock_post.side_effect = requests.exceptions.RequestException("server Unavailable")
+    payload = {"prompt": "keyboard"}
+    response = client.post("/products/enrich",json=payload)
+    # 3. Inside the function, we can now configure our stunt double
+    assert response.status_code == 503
+
+
