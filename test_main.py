@@ -167,3 +167,27 @@ def test_enrich_product_provider_error(mock_post):
     assert response.status_code == 503
 
 
+@patch("main.requests.post")
+def test_enrich_product_success(mock_post):
+    fake_data = {
+    "choices": [
+        {
+            "message": {
+                "content": '{"name": "Super Keyboard", "price": 100, "description": "Great typing"}'
+            }
+        }
+    ] }
+    mock_post.return_value.status_code = 200.
+    mock_post.return_value.json.return_value = fake_data
+    payload = {"prompt": "keyboard"}
+
+    response = client.post("/products/enrich", json=payload)
+    assert response.status_code == 201
+    assert response.json()["name"] == "Super Keyboard"
+    assert response.json()["price"] == 100
+    assert response.json()["description"] == "Great typing"
+
+
+    
+
+
